@@ -1,0 +1,119 @@
+<home>:
+    BoxLayout
+        size_hint_y: 0.2
+        pos_hint:{'y':0.8}
+        Button
+            text: "Add Note"
+            on_press: root.manager.current = 'note_create'
+    ScrollView:
+        do_scroll_x: False
+        do_scroll_y: True
+        pos_hint:{'y':0}
+        size_hint_y: 0.8
+        GridLayout
+            cols: 1
+            id: grid_start
+            size_hint: 1, None
+            height: self.minimum_height
+            Button
+                text: "Settings/Backup/Restore"
+                size_hint_y: None
+                height: dp(60)
+                on_press: root.manager.current = 'settings'
+
+
+
+<note_create>:
+    GridLayout
+        cols: 1
+        TextInput
+            id: note_input
+        Button
+            text: "save"
+            on_press: root.note_upload(note_input.text); note_input.text = "";
+        Button
+            text: "abort"
+            on_press: root.manager.current = 'home'; note_input.text = ""
+
+<note_edit>:
+    GridLayout
+        id: edit_layout
+        cols: 1
+        TextInput
+            id: note_input
+            size_hint_y: 2.5
+        Button
+            text: "save edit"
+            on_press: root.update_note(note_input.text)
+        Button
+            text: "delete"
+            on_press: root.manager.get_screen("home").note_delete()
+        Button
+            text: "abort"
+            on_press: root.manager.current = 'home'
+
+<settings>:
+    GridLayout
+        cols: 1
+        Button
+            text: "Show backup mnemonic"
+            on_press: root.manager.current = 'show_mnemonic'
+        Button
+            text: "Restore with mnemonic"
+            on_press: root.manager.current = 'restore_mnemonic'
+        Button
+            text: "Edit used Nostr relays"
+            on_press: root.manager.current = 'relays'
+        Button
+            text: "abort"
+            on_press: root.manager.current = 'home'
+
+<show_mnemonic>:
+    GridLayout
+        cols: 1
+        Label
+            text: "Backup the 24 words, they are the keys to your notes"
+        Label
+            text: root.mnemonic()
+        Button
+            text: "I wrote them down, go back home"
+            on_press: root.manager.current = 'home'
+
+<restore_mnemonic>:
+    GridLayout
+        cols: 1
+        Label
+            text: "Put your mnemonic words in the textfield to restore your notes (with spaces)"
+        TextInput
+            id: mnemonic_words
+            text: "Input words here:"
+            on_focus: self.text=""
+        Button
+            text: "Load notes from words"
+            on_press: root.restore(mnemonic_words)
+        Button
+            text: "abort"
+            on_press: mnemonic_words.focus = False; mnemonic_words.text = "Input words here:"; root.manager.current = 'home'
+
+<relays>:
+    GridLayout
+        id: relay_layout
+        cols: 1
+        TextInput
+            id: rel1
+            text: root.relay_text[0]
+            on_focus: root.clear_input("rel1")
+        TextInput
+            id: rel2
+            text: root.relay_text[1]
+            on_focus: root.clear_input("rel2")
+        TextInput
+            id: rel3
+            text: root.relay_text[2]
+            on_focus: root.clear_input("rel3")
+        Button
+            text: "Save relays (restart app to apply changes)"
+            on_press: root.update_relays()
+        Button
+            text: "abort"
+            on_press: root.abort()

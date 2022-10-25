@@ -1,0 +1,1 @@
+['slot_not_used', 'wss://nostr-pub.wellorder.net', 'wss://relay.damus.io']
