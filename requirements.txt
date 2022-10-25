@@ -1,0 +1,11 @@
+kivy
+cryptography
+secp256k1
+websocket-client
+bip39
+cffi
+requests
+urllib3
+docutils
+Kivy-Garden
+pygments
