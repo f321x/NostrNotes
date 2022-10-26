@@ -9,3 +9,4 @@ urllib3
 docutils
 Kivy-Garden
 pygments
+wheel

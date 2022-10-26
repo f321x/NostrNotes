@@ -20,6 +20,7 @@ current_version = "1"
 sm = ScreenManager(transition=NoTransition())
 prikey = ""
 
+
 try:
     keyfile = open("privkey.txt", "r")
     prikey = keyfile.read()
@@ -41,7 +42,6 @@ def decode_mnemonic(mnemonic):
 
 
 ss = nostr.key.compute_shared_secret(prikey, pubkey)
-# ss = "dba61e1f8bb5923b6d157961a652a1aed2612f0a387e624dfdc35e3aa60178c7" ss for testing purposes
 relay_manager = RelayManager()
 
 relayfile = open("relays.txt", "r")
@@ -83,17 +83,19 @@ def nostr_download():
         time.sleep(1.25)  # allow the connections to open
 
         message = json.dumps(request)
-        relay_manager.publish_message(message)
+        try:
+            relay_manager.publish_message(message)
+        except:
+            nostr_connect()
+            time.sleep(1.25)
+            relay_manager.publish_message(message)
         time.sleep(1)  # allow the messages to send
         event_dict = {}
         while relay_manager.message_pool.has_events():
             event_msg = relay_manager.message_pool.get_event()
             try:
-                try:
-                    event_dict[event_msg.event.created_at] = eval(nostr.key.decrypt_message(event_msg.event.content, ss))
-                except ValueError:
-                    pass
-            except AttributeError:
+                event_dict[event_msg.event.created_at] = eval(nostr.key.decrypt_message(event_msg.event.content, ss))
+            except ValueError:
                 pass
         if event_dict != {}:
             return event_dict[max(k for k, v in event_dict.items())]
