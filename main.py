@@ -41,6 +41,7 @@ def decode_mnemonic(mnemonic):
 
 
 ss = nostr.key.compute_shared_secret(prikey, pubkey)
+# ss = "dba61e1f8bb5923b6d157961a652a1aed2612f0a387e624dfdc35e3aa60178c7" ss for testing purposes
 relay_manager = RelayManager()
 
 relayfile = open("relays.txt", "r")
@@ -70,9 +71,8 @@ def nostr_upload(notes_string):
 
 
 def nostr_download():
-    try:
         filters = Filters([Filter(authors=[pubkey], kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE], limit=200)])
-        subscription_id = "NostrNotes2"
+        subscription_id = str(pubkey) + "dl"
         request = [ClientMessageType.REQUEST, subscription_id]
         request.extend(filters.to_json_array())
         for relay in relay_list:
@@ -87,39 +87,40 @@ def nostr_download():
         time.sleep(1)  # allow the messages to send
         event_dict = {}
         while relay_manager.message_pool.has_events():
+            event_msg = relay_manager.message_pool.get_event()
             try:
-                event_msg = relay_manager.message_pool.get_event()
-                event_dict[event_msg.event.created_at] = eval(nostr.key.decrypt_message(event_msg.event.content, ss))
-            except:
-                break
-        return event_dict[max(k for k, v in event_dict.items())]
-    except:
-        pass
+                try:
+                    event_dict[event_msg.event.created_at] = eval(nostr.key.decrypt_message(event_msg.event.content, ss))
+                except ValueError:
+                    pass
+            except AttributeError:
+                pass
+        if event_dict != {}:
+            return event_dict[max(k for k, v in event_dict.items())]
+        else:
+            return None
+
 
 
 def check_updates():
-    try:
         filters = Filters([Filter(authors=["ff418ffaf56ee1e9a2de81b20b2fc3b84ff027fa7b3e2ce1fc49c5dd0ee40670"],
                                   kinds=[EventKind.TEXT_NOTE], limit=100)])
-        subscription_id = "NostrNotesCheckUpdate"
+        subscription_id = str(pubkey) + "ud"
         request = [ClientMessageType.REQUEST, subscription_id]
         request.extend(filters.to_json_array())
         relay_manager.add_subscription(subscription_id, filters)
 
         message = json.dumps(request)
-        relay_manager.publish_message(message)
-        time.sleep(1)
-        event_dict = {}
-        while relay_manager.message_pool.has_events():
-            try:
+        try:
+            relay_manager.publish_message(message)
+            time.sleep(1)
+            event_dict = {}
+            while relay_manager.message_pool.has_events():
                 event_msg = relay_manager.message_pool.get_event()
                 event_dict[event_msg.event.created_at] = event_msg.event.content.split("/")[1]
-                print(event_msg.content)
-            except:
-                break
-        return event_dict[max(k for k, v in event_dict.items())]
-    except:
-        pass
+            return event_dict[max(k for k, v in event_dict.items())]
+        except:
+            return current_version
 
 
 note_dict = nostr_download()

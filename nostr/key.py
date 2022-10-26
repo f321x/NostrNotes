@@ -3,7 +3,8 @@ import base64
 from cffi import FFI
 from secp256k1 import PrivateKey, PublicKey
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives import padding, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 
 def generate_private_key() -> str:
     private_key = PrivateKey()
@@ -25,7 +26,7 @@ def get_key_pair() -> tuple:
 
 def compute_shared_secret(sender_private_key: str, receiver_public_key: str) -> str:
     public_key = PublicKey(bytes.fromhex("02" + receiver_public_key), True)
-    return public_key.ecdh(bytes.fromhex(sender_private_key), copy_x).hex() 
+    return public_key.ecdh(bytes.fromhex(sender_private_key), copy_x).hex()
 
 def encrypt_message(content: str, shared_secret: str) -> str:
     iv = os.urandom(16)

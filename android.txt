@@ -1,0 +1,3 @@
+title=NostrNotes
+author=@f321x
+orientation=portrait
