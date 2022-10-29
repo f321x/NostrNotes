@@ -21,6 +21,7 @@ sm = ScreenManager(transition=NoTransition())
 prikey = ""
 
 
+
 try:
     keyfile = open("privkey.txt", "r")
     prikey = keyfile.read()
@@ -60,7 +61,7 @@ def nostr_upload(notes_string):
     for tries in range(2):
         try:
             event = Event(pubkey, nostr.key.encrypt_message(notes_string, ss), kind=4, tags=[["p", pubkey]])
-            event.sign(prikey)
+            event.sign(prikey)   #maybe add created_at
 
             message = json.dumps([ClientMessageType.EVENT, event.to_json_object()])
             relay_manager.publish_message(message)

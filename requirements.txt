@@ -1,6 +1,6 @@
 kivy
 cryptography
-secp256k1
+secp256k1>=0.14.0
 websocket-client
 bip39
 cffi
