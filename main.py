@@ -15,7 +15,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 import bip39
 
-current_version = "1"
+current_version = "2"
 
 sm = ScreenManager(transition=NoTransition())
 prikey = ""
