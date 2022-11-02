@@ -20,8 +20,6 @@ current_version = "1"
 sm = ScreenManager(transition=NoTransition())
 prikey = ""
 
-
-
 try:
     keyfile = open("privkey.txt", "r")
     prikey = keyfile.read()
@@ -33,6 +31,7 @@ except:
     keyfile.close()
 
 pubkey = get_public_key(prikey)
+
 
 def generate_mnemonic(prikey):
     return bip39.encode_bytes(bytes.fromhex(prikey))
@@ -61,7 +60,7 @@ def nostr_upload(notes_string):
     for tries in range(2):
         try:
             event = Event(pubkey, nostr.key.encrypt_message(notes_string, ss), kind=4, tags=[["p", pubkey]])
-            event.sign(prikey)   #maybe add created_at
+            event.sign(prikey)  # maybe add created_at
 
             message = json.dumps([ClientMessageType.EVENT, event.to_json_object()])
             relay_manager.publish_message(message)
@@ -72,58 +71,56 @@ def nostr_upload(notes_string):
 
 
 def nostr_download():
-        filters = Filters([Filter(authors=[pubkey], kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE], limit=200)])
-        subscription_id = str(pubkey) + "dl"
-        request = [ClientMessageType.REQUEST, subscription_id]
-        request.extend(filters.to_json_array())
-        for relay in relay_list:
-            if relay[0:6] == "wss://":
-                relay_manager.add_relay(relay)
-        relay_manager.add_subscription(subscription_id, filters)
-        relay_manager.open_connections({"cert_reqs": ssl.CERT_NONE})  # NOTE: This disables ssl certificate verification
-        time.sleep(1.25)  # allow the connections to open
+    filters = Filters([Filter(authors=[pubkey], kinds=[EventKind.ENCRYPTED_DIRECT_MESSAGE], limit=200)])
+    subscription_id = str(pubkey) + "dl"
+    request = [ClientMessageType.REQUEST, subscription_id]
+    request.extend(filters.to_json_array())
+    for relay in relay_list:
+        if relay[0:6] == "wss://":
+            relay_manager.add_relay(relay)
+    relay_manager.add_subscription(subscription_id, filters)
+    relay_manager.open_connections({"cert_reqs": ssl.CERT_NONE})  # NOTE: This disables ssl certificate verification
+    time.sleep(1.25)  # allow the connections to open
 
-        message = json.dumps(request)
+    message = json.dumps(request)
+    try:
+        relay_manager.publish_message(message)
+    except:
+        nostr_connect()
+        time.sleep(1.25)
+        relay_manager.publish_message(message)
+    time.sleep(1)  # allow the messages to send
+    event_dict = {}
+    while relay_manager.message_pool.has_events():
+        event_msg = relay_manager.message_pool.get_event()
         try:
-            relay_manager.publish_message(message)
-        except:
-            nostr_connect()
-            time.sleep(1.25)
-            relay_manager.publish_message(message)
-        time.sleep(1)  # allow the messages to send
-        event_dict = {}
-        while relay_manager.message_pool.has_events():
-            event_msg = relay_manager.message_pool.get_event()
-            try:
-                event_dict[event_msg.event.created_at] = eval(nostr.key.decrypt_message(event_msg.event.content, ss))
-            except ValueError:
-                pass
-        if event_dict != {}:
-            return event_dict[max(k for k, v in event_dict.items())]
-        else:
-            return None
-
+            event_dict[event_msg.event.created_at] = eval(nostr.key.decrypt_message(event_msg.event.content, ss))
+        except ValueError:
+            pass
+    if event_dict != {}:
+        return event_dict[max(k for k, v in event_dict.items())]
+    else:
+        return None
 
 
 def check_updates():
+    try:
         filters = Filters([Filter(authors=["ff418ffaf56ee1e9a2de81b20b2fc3b84ff027fa7b3e2ce1fc49c5dd0ee40670"],
                                   kinds=[EventKind.TEXT_NOTE], limit=100)])
         subscription_id = str(pubkey) + "ud"
         request = [ClientMessageType.REQUEST, subscription_id]
         request.extend(filters.to_json_array())
         relay_manager.add_subscription(subscription_id, filters)
-
         message = json.dumps(request)
-        try:
-            relay_manager.publish_message(message)
-            time.sleep(1)
-            event_dict = {}
-            while relay_manager.message_pool.has_events():
-                event_msg = relay_manager.message_pool.get_event()
-                event_dict[event_msg.event.created_at] = event_msg.event.content.split("/")[1]
-            return event_dict[max(k for k, v in event_dict.items())]
-        except:
-            return current_version
+        relay_manager.publish_message(message)
+        time.sleep(1)
+        event_dict = {}
+        while relay_manager.message_pool.has_events():
+            event_msg = relay_manager.message_pool.get_event()
+            event_dict[event_msg.event.created_at] = event_msg.event.content.split("/")[1]
+        return event_dict[max(k for k, v in event_dict.items())]
+    except:
+        return current_version
 
 
 note_dict = nostr_download()
